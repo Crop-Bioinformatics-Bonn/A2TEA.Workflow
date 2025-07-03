@@ -108,25 +108,6 @@ for (i in 1:length(dea_list_short)){
 #print(h_species)
 ############ TEST
 
-
-list_AllSpeciesDEResultsDataFrames <- list()
-
-for (i in species_list) {
-    # individual species file could be deleted but perhaps I'll need them later; kept for now...
-    assign(paste0(i, "_DEresultsTable"), as.data.frame(results(get(i))))
-    # create gene name vector here (when list is constructed rownames become unique species-gene combination)
-    gene <- rownames(get(paste0(i, "_DEresultsTable")))
-    df_with_genes <- add_column(get(paste0(i, "_DEresultsTable")), gene, .before = "baseMean")
-    # also add a species column which will will also come in handy during the shiny steps
-    species <- replicate(nrow(df_with_genes), i)
-    df_with_genes <- add_column(df_with_genes, species, .before = "gene")
-    # create list of dataframes, which will come in handy
-    list_AllSpeciesDEResultsDataFrames[[i]] <- df_with_genes
-}
-#create combined "mega" dataframe of all species, which is going  to be used for shiny lookup
-combined_AllSpeciesDEResultsDataFrames <- do.call("rbind", list_AllSpeciesDEResultsDataFrames)
-
-
 ## Create long format HOG-genes relation table
 HOG_file_raw <- read_delim("orthofinder/final-results/Phylogenetic_Hierarchical_Orthogroups/N0.tsv", delim = "\t")
 
@@ -149,6 +130,33 @@ HOG_file_long <- HOG_file_merged %>%
                     mutate(genes = str_trim(unpacked)) %>% 
                     select(-c(x, unpacked)) %>% 
                     rename(gene = genes)
+
+
+list_AllSpeciesDEResultsDataFrames <- list()
+
+for (i in species_list) {
+    # individual species file could be deleted but perhaps I'll need them later; kept for now...
+    assign(paste0(i, "_DEresultsTable"), as.data.frame(results(get(i))))
+    # create gene name vector here (when list is constructed rownames become unique species-gene combination)
+    gene <- rownames(get(paste0(i, "_DEresultsTable")))
+    df_with_genes <- add_column(get(paste0(i, "_DEresultsTable")), gene, .before = "baseMean")
+    # also add a species column which will will also come in handy during the shiny steps
+    species <- replicate(nrow(df_with_genes), i)
+    df_with_genes <- add_column(df_with_genes, species, .before = "gene")
+    # check if HOG-genes and DE-genes match
+    nr_common_genes <- length(intersect(df_with_genes$gene, unlist(strsplit(HOG_file_raw[[i]], ","))))
+    if (nr_common_genes == 0) {
+        print(paste0("Warning!! No common genes between DE results and HOGs for species: ", i, " please check if the gene names in the input files match!", "\n", "You might want to consider custom isoform filtering"))
+    } else {
+        print(paste0("Found ", nr_common_genes, " common genes between DE results and HOGs for species: ", i))
+    }
+    # create list of dataframes, which will come in handy
+    list_AllSpeciesDEResultsDataFrames[[i]] <- df_with_genes
+}
+#create combined "mega" dataframe of all species, which is going  to be used for shiny lookup
+combined_AllSpeciesDEResultsDataFrames <- do.call("rbind", list_AllSpeciesDEResultsDataFrames)
+
+
 
 
 ## Adding specific HOG or singleton info as HOG column to DE tables
@@ -555,7 +563,7 @@ for (i in 1:length(hypotheses$hypothesis)) {
     h_species_compared <- intersect(h_compared_to, species_list)
 
     #only perform these steps when there are species in expanded and compared with expression data
-    if(length(h_species_expanded) != 0 & length(h_species_compared) != 0) {
+    if(length(h_species_expanded) == length(h_expanded_in) & length(h_species_compared) == length(h_compared_to)) {
 
       HOG_level_list[[i]] <- HOG_level_list[[i]] %>%
         mutate(
