@@ -19,6 +19,7 @@ if len(GEN_FASTA_SPECIES) != 0:
             length = config["read_length_star_index"],
             size = config["limitGenomeGenerateRAM"],
             temp_dir = "STAR_tmp_{species}",
+            nbases = config["nbases"],
             #possible to add params here, by referring to the table like this:
             #SampleSM = lambda wildcards: list(units_table.SampleSM[units_table.Unit == wildcards.unit]),
         conda:
@@ -35,6 +36,7 @@ if len(GEN_FASTA_SPECIES) != 0:
             '--sjdbGTFfile {input.annotation} '
             '--sjdbOverhang {params.length} '
             '--outTmpDir {params.temp_dir} '
+            '--genomeSAindexNbases {params.nbases} '
             '{log}'
 
 
@@ -42,6 +44,9 @@ if len(GEN_FASTA_SPECIES) != 0:
         input:
             trim_check = "checks/trimmed/trim_cleanup.check",
             dir = expand("STAR_indexes/{species}", species = GEN_FASTA_SPECIES),
+#            trim_check = ancient("checks/trimmed/trim_cleanup.check"),
+#            dir = ancient(expand("STAR_indexes/{species}", species = GEN_FASTA_SPECIES)),
+
         output:
             # see STAR manual for additional output files -
             align = "star/{species}/{sample}_{unit}_Aligned.sortedByCoord.out.bam",
