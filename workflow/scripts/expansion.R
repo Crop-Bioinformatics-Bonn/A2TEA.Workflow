@@ -216,9 +216,11 @@ for (e in expanded_in) {
                                 # the multiplication in the 2nd step, this underlines that we do so
                                 # now with the second expansion distance criterium we should have it anyway
                                 get(c) > 0 &
-                                get(e)/species_table[e, "ploidy"]*2 >= expansion_factor*(get(c))/species_table[c, "ploidy"]*2 ~ get(exp_species_name) + 1,
+                                get(e)/species_table[e, "ploidy"]*2 >= expansion_factor*(get(c))/species_table[c, "ploidy"]*2 &
+                                get(e) >= expanded_genes_min ~ get(exp_species_name) + 1,   # <- I added this filter here: & get(e) >= expanded_genes_min to replace the wrong filter more downstream!
                                 get(c) > 0 &
-                                get(e)/species_table[e, "ploidy"]*2 >= expansion_difference + (get(c))/species_table[c, "ploidy"]*2 ~ get(exp_species_name) + 1,
+                                get(e)/species_table[e, "ploidy"]*2 >= expansion_difference + (get(c))/species_table[c, "ploidy"]*2 &
+                                get(e) >= expanded_genes_min ~ get(exp_species_name) + 1,  # <- same as above
                                 TRUE ~ 0,
                               )
                         )  
@@ -232,9 +234,11 @@ for (e in expanded_in) {
                             mutate(!!(exp_species_name) := 
                             dplyr::case_when(
                                 get(c) > 0 &
-                                get(e) >= expansion_factor*(get(c)) ~ get(exp_species_name) + 1,
+                                get(e) >= expansion_factor*(get(c)) &
+                                get(e) >= expanded_genes_min ~ get(exp_species_name) + 1, # <- same as above
                                 get(c) > 0 &
-                                get(e) >= expansion_difference + get(c) ~ get(exp_species_name) + 1,
+                                get(e) >= expansion_difference + get(c) &
+                                get(e) >= expanded_genes_min ~ get(exp_species_name) + 1, # <- same as above
                                 TRUE ~ 0,
                               )
                         )
@@ -295,10 +299,15 @@ if (compared_to_all_found == "YES") {
   select(-compared_to_pass)
 }
 
-# optional hard filter for at least # genes in all expanded species
-# this is useful in difficult ploidy cases and solves downstream issues in small OGs
-HOG_tibble <- HOG_tibble %>%
-  filter(if_all(contains(expanded_in), ~ . >= expanded_genes_min))
+
+# !! We had a bug here !!
+# We want to have at least 2 genes from each of the expanded species in the HOG. But we do not need every "expanded_in" species to really be expanded, because this depends on
+# Nmin_expanded_in, which we have set above. This does not work when testing for "at least n of tolerant species", where n is smaller than expanded_in
+# --> I moved the filter upwards, because we don't have the info about which species are the expanded ones
+## optional hard filter for at least # genes in all expanded species
+## this is useful in difficult ploidy cases and solves downstream issues in small OGs
+## dont use: HOG_tibble <- HOG_tibble %>%
+## dont use:  filter(if_all(contains(expanded_in), ~ . >= expanded_genes_min))
 
 # new object: expanded_HOGs
 expanded_HOGs <- HOG_tibble

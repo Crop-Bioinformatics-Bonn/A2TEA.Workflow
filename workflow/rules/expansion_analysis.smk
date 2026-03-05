@@ -111,6 +111,9 @@ rule fasta_extraction:
         """
         if ! [ -s {input.protein_lists} ]; then
           touch {output}
+# and if the file exists but there are more than 300 records in the file, then also don't run the alignment!
+        elif [[ $(wc -l <{input.protein_lists}) -ge 300 ]]; then
+          touch {output}
         else
           faSomeRecords {input.superset_fa} {input.protein_lists} {output}
         fi

@@ -26,7 +26,8 @@ trim_options: "SLIDINGWINDOW:4:20 MINLEN:40"
 ##e.g.: 2x100b paired-end reads, the ideal value is 100-1=99; varying length? then, do this with the max length
 limitGenomeGenerateRAM: 60000000000
 read_length_star_index: 99
-
+# for smaller genomes, the standard for the param --genomeSAindexNbases is too large. Change it here with the variable "nbases"
+nbases: 12
 
 ## parameters when running usual pipeline ##
 ## option --genomeLoad NoShared memory will load into memory the whole index on each mapping run and delete it after the mapping ##
